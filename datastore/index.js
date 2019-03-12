@@ -8,25 +8,46 @@ var items = {};
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
 exports.create = (text, callback) => {
-  var id = counter.getNextUniqueId();
-  items[id] = text;
-  callback(null, { id, text });
+  counter.getNextUniqueId((err, id) => {
+    if (err) {
+      throw (err);
+    } else {
+      fs.writeFile(exports.dataDir + '/' + id + '.txt', text, (err) => {
+        if (err) {
+          throw err;
+        } else {
+          callback(null, { id, text });
+        }
+      });
+    }
+  });
 };
 
 exports.readAll = (callback) => {
-  var data = _.map(items, (text, id) => {
-    return { id, text };
+  fs.readdir(exports.dataDir, (err, items) => {
+    if (err) {
+      throw (err);
+    } else {
+      callback(null, _.map(items, (id) => {
+        return { id: id.slice(0, 5), text: id.slice(0, 5) };
+      }));
+    }
   });
-  callback(null, data);
 };
-
+// fs.readFile(FILE_LOCATION, function (err, data) {
+//   if (err) throw err;
+//   if(data.indexOf('search string') >= 0){
+//    console.log(data)
+//   }
+// });
 exports.readOne = (id, callback) => {
-  var text = items[id];
-  if (!text) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    callback(null, { id, text });
-  }
+  fs.readFile(exports.dataDir + '/' + id + '.txt', (err, text) => {
+    if (err) {
+      throw err;
+    } else {
+      callback(null, { id, text: text.toString() });
+    }
+  });
 };
 
 exports.update = (id, text, callback) => {
