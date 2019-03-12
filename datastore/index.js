@@ -2,6 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
+const Promise = require('bluebird');
+const readDir = Promise.promisify(fs.readdir);
+const readFile = Promise.promisify(fs.readFile);
+// const readOne = Promise.promisify(require('./index.js'));
 
 var items = {};
 
@@ -24,22 +28,20 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  fs.readdir(exports.dataDir, (err, items) => {
-    if (err) {
-      throw (err);
-    } else {
-      callback(null, _.map(items, (id) => {
-        return { id: id.slice(0, 5), text: id.slice(0, 5) };
-      }));
-    }
-  });
+  return readDir(exports.dataDir)
+    .then((fileArray) => {
+      let promiseArray = _.map(fileArray, (id) => {
+        return readFile(exports.dataDir + '/' + id).then((contents) => { return { id: id.slice(0, 5), text: contents.toString() }; });
+      });
+
+      Promise.all(promiseArray)
+        .then((values) => {
+          callback(null, values);
+        });
+
+    });
 };
-// fs.readFile(FILE_LOCATION, function (err, data) {
-//   if (err) throw err;
-//   if(data.indexOf('search string') >= 0){
-//    console.log(data)
-//   }
-// });
+
 exports.readOne = (id, callback) => {
   fs.readFile(exports.dataDir + '/' + id + '.txt', (err, text) => {
     if (err) {
